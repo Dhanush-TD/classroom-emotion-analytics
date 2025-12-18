@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+fer_env/
+
+# Datasets
+raf_db/
+dataset for happy/
+dataset for sad/
+dataset_classroom/
+
+# Analytics (generated)
+analytics/session_*.csv
+analytics/plots/
+
+# OS / Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log

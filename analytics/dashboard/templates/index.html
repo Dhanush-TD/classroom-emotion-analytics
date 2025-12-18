@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Engagement Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<h1>📊 Teacher Engagement Dashboard</h1>
+
+<div class="score">
+    Overall Engagement: <span>{{ engagement }}%</span>
+</div>
+
+<canvas id="chart"></canvas>
+
+<script type="application/json" id="session-data">
+{
+  "labels": {{ counts.keys() | list | tojson }},
+  "values": {{ counts.values() | list | tojson }}
+}
+</script>
+
+<script>
+  const sessionData = JSON.parse(
+    document.getElementById("session-data").textContent
+  );
+
+  const labels = sessionData.labels;
+  const values = sessionData.values;
+
+  const data = {
+    labels: labels,
+    datasets: [{
+      label: "Learning State Distribution",
+      data: values,
+      backgroundColor: [
+        "#2ecc71", "#3498db", "#f1c40f",
+        "#e67e22", "#e74c3c", "#9b59b6", "#95a5a6"
+      ]
+    }]
+  };
+
+  new Chart(document.getElementById("chart"), {
+    type: "bar",
+    data: data,
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,253 @@
+import cv2
+import torch
+import timm
+import numpy as np
+from facenet_pytorch import MTCNN
+from torchvision import transforms
+from collections import deque, defaultdict
+from PIL import Image
+import math
+import os
+import csv
+from datetime import datetime
+
+from config import EMOTION_MAP
+
+# ===============================
+# TORCH OPTIMIZATION
+# ===============================
+torch.backends.cudnn.benchmark = True
+torch.backends.cuda.matmul.allow_tf32 = True
+
+# ===============================
+# DEVICE
+# ===============================
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+
+# ===============================
+# LOAD FINE-TUNED MODEL
+# ===============================
+model = timm.create_model(
+    "swin_tiny_patch4_window7_224",
+    pretrained=False,
+    num_classes=7
+)
+
+model.load_state_dict(
+    torch.load("checkpoints/swin_t_rafdb_finetuned.pth", map_location=device)
+)
+
+model.to(device)
+model.eval()
+
+# ===============================
+# FACE DETECTOR (MTCNN)
+# ===============================
+mtcnn = MTCNN(
+    image_size=160,
+    margin=10,
+    keep_all=True,
+    device=device
+)
+
+# ===============================
+# TRANSFORM
+# ===============================
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.5]*3, [0.5]*3)
+])
+
+# ===============================
+# EDUCATION LEARNING STATES
+# ===============================
+LEARNING_STATE_MAP = {
+    "Happy": "Engaged",
+    "Neutral": "Attentive",
+    "Surprise": "Interested",
+    "Sad": "Confused",
+    "Angry": "Frustrated",
+    "Fear": "Anxious",
+    "Disgust": "Disengaged"
+}
+
+ENGAGEMENT_WEIGHT = {
+    "Engaged": 1.0,
+    "Interested": 0.8,
+    "Attentive": 0.6,
+    "Confused": 0.3,
+    "Frustrated": 0.2,
+    "Anxious": 0.2,
+    "Disengaged": 0.0
+}
+
+# ===============================
+# TRACKING STATE
+# ===============================
+next_face_id = 0
+face_centers = {}
+emotion_queues = defaultdict(lambda: deque(maxlen=3))
+MAX_DIST = 60
+
+def euclidean(p1, p2):
+    return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+def get_face_id(center):
+    global next_face_id
+
+    if not face_centers:
+        face_centers[next_face_id] = center
+        fid = next_face_id
+        next_face_id += 1
+        return fid
+
+    distances = {
+        fid: euclidean(center, prev)
+        for fid, prev in face_centers.items()
+    }
+
+    fid, dist = min(distances.items(), key=lambda x: x[1])
+
+    if dist < MAX_DIST:
+        face_centers[fid] = center
+        return fid
+    else:
+        face_centers[next_face_id] = center
+        fid = next_face_id
+        next_face_id += 1
+        return fid
+
+def smooth_prediction(fid, pred):
+    q = emotion_queues[fid]
+    q.append(pred)
+    return max(set(q), key=q.count)
+
+# ===============================
+# ANALYTICS SETUP
+# ===============================
+os.makedirs("analytics", exist_ok=True)
+session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+csv_path = f"analytics/session_{session_id}.csv"
+
+analytics_data = []
+
+# ===============================
+# WEBCAM (DROIDCAM)
+# ===============================
+cap = cv2.VideoCapture(1)  # change to 0 if needed
+
+if not cap.isOpened():
+    raise RuntimeError("Webcam not accessible")
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FPS, 30)
+
+print("Press ESC to exit")
+
+# ===============================
+# MAIN LOOP
+# ===============================
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    boxes, _ = mtcnn.detect(rgb)
+
+    frame_states = []
+
+    if boxes is not None:
+        for box in boxes:
+            x1, y1, x2, y2 = map(int, box)
+
+            h, w, _ = frame.shape
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w, x2), min(h, y2)
+
+            # Mouth-focused crop (important for Sad)
+            y1 = int(y1 + 0.15 * (y2 - y1))
+            face = rgb[y1:y2, x1:x2]
+
+            if face.shape[0] < 30 or face.shape[1] < 30:
+                continue
+
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+            fid = get_face_id((cx, cy))
+
+            face_pil = Image.fromarray(face)
+            face_tensor = transform(face_pil).unsqueeze(0).to(device)
+
+            with torch.no_grad():
+                outputs = model(face_tensor)
+
+            pred = torch.argmax(outputs, dim=1).item()
+            emotion_id = smooth_prediction(fid, pred)
+            emotion = EMOTION_MAP[emotion_id]
+            learning_state = LEARNING_STATE_MAP[emotion]
+
+            frame_states.append(learning_state)
+            analytics_data.append([timestamp, learning_state])
+
+            cv2.rectangle(frame, (x1, y1), (x2, y2),
+                          (0, 255, 0), 2)
+
+            cv2.putText(
+                frame,
+                learning_state,
+                (x1, y1 - 8),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2
+            )
+
+    # ===============================
+    # ENGAGEMENT %
+    # ===============================
+    if frame_states:
+        scores = [ENGAGEMENT_WEIGHT[s] for s in frame_states]
+        engagement = int((sum(scores) / len(scores)) * 100)
+    else:
+        engagement = 0
+
+    cv2.putText(
+        frame,
+        f"Engagement: {engagement}%",
+        (20, 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.0,
+        (0, 255, 255),
+        2
+    )
+
+    cv2.imshow("Education Emotion Monitoring", frame)
+
+    if cv2.waitKey(1) & 0xFF == 27:
+        break
+
+# ===============================
+# SAVE ANALYTICS
+# ===============================
+cap.release()
+cv2.destroyAllWindows()
+
+with open(csv_path, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Time", "Learning_State"])
+    writer.writerows(analytics_data)
+
+print("Session analytics saved:", csv_path)
+
+# Auto-generate plot
+import subprocess
+subprocess.run([
+    "python",
+    "src/plot_analytics.py",
+    csv_path
+])
