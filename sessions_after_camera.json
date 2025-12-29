@@ -1,0 +1,413 @@
+{
+  "sessions": [
+    {
+      "csv_file": "session_20251226_124319.csv",
+      "csv_path": "/download-csv/20251226_124319",
+      "id": "20251226_124319",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:43:19"
+    },
+    {
+      "csv_file": "session_20251226_124126.csv",
+      "csv_path": "/download-csv/20251226_124126",
+      "id": "20251226_124126",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:41:26"
+    },
+    {
+      "csv_file": "session_20251226_123955.csv",
+      "csv_path": "/download-csv/20251226_123955",
+      "id": "20251226_123955",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:39:55"
+    },
+    {
+      "csv_file": "session_20251226_123945.csv",
+      "csv_path": "/download-csv/20251226_123945",
+      "id": "20251226_123945",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:39:45"
+    },
+    {
+      "csv_file": "session_20251226_123247.csv",
+      "csv_path": "/download-csv/20251226_123247",
+      "id": "20251226_123247",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:32:47"
+    },
+    {
+      "csv_file": "session_20251226_122529.csv",
+      "csv_path": "/download-csv/20251226_122529",
+      "id": "20251226_122529",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:25:29"
+    },
+    {
+      "csv_file": "session_20251226_120622.csv",
+      "csv_path": "/download-csv/20251226_120622",
+      "id": "20251226_120622",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:06:22"
+    },
+    {
+      "csv_file": "session_20251226_120358.csv",
+      "csv_path": "/download-csv/20251226_120358",
+      "id": "20251226_120358",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:03:58"
+    },
+    {
+      "csv_file": "session_20251226_120340.csv",
+      "csv_path": "/download-csv/20251226_120340",
+      "id": "20251226_120340",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:03:40"
+    },
+    {
+      "csv_file": "session_20251226_120332.csv",
+      "csv_path": "/download-csv/20251226_120332",
+      "id": "20251226_120332",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 12:03:32"
+    },
+    {
+      "csv_file": "session_20251226_115912.csv",
+      "csv_path": "/download-csv/20251226_115912",
+      "id": "20251226_115912",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 11:59:12"
+    },
+    {
+      "csv_file": "session_20251226_115859.csv",
+      "csv_path": "/download-csv/20251226_115859",
+      "id": "20251226_115859",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 11:58:59"
+    },
+    {
+      "csv_file": "session_20251226_114750.csv",
+      "csv_path": "/download-csv/20251226_114750",
+      "id": "20251226_114750",
+      "plot_file": "session_20251226_114750_stylish.png",
+      "plot_path": "/download-plot/20251226_114750",
+      "timestamp": "2025-12-26 11:47:50"
+    },
+    {
+      "csv_file": "session_20251226_114728.csv",
+      "csv_path": "/download-csv/20251226_114728",
+      "id": "20251226_114728",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 11:47:28"
+    },
+    {
+      "csv_file": "session_20251226_114425.csv",
+      "csv_path": "/download-csv/20251226_114425",
+      "id": "20251226_114425",
+      "plot_file": "session_20251226_114425_stylish.png",
+      "plot_path": "/download-plot/20251226_114425",
+      "timestamp": "2025-12-26 11:44:25"
+    },
+    {
+      "csv_file": "session_20251226_114102.csv",
+      "csv_path": "/download-csv/20251226_114102",
+      "id": "20251226_114102",
+      "plot_file": "session_20251226_114102_stylish.png",
+      "plot_path": "/download-plot/20251226_114102",
+      "timestamp": "2025-12-26 11:41:02"
+    },
+    {
+      "csv_file": "session_20251226_112912.csv",
+      "csv_path": "/download-csv/20251226_112912",
+      "id": "20251226_112912",
+      "plot_file": "session_20251226_112912_stylish.png",
+      "plot_path": "/download-plot/20251226_112912",
+      "timestamp": "2025-12-26 11:29:12"
+    },
+    {
+      "csv_file": "session_20251226_112349.csv",
+      "csv_path": "/download-csv/20251226_112349",
+      "id": "20251226_112349",
+      "plot_file": "session_20251226_112349_stylish.png",
+      "plot_path": "/download-plot/20251226_112349",
+      "timestamp": "2025-12-26 11:23:49"
+    },
+    {
+      "csv_file": "session_20251226_112335.csv",
+      "csv_path": "/download-csv/20251226_112335",
+      "id": "20251226_112335",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 11:23:35"
+    },
+    {
+      "csv_file": "session_20251226_111949.csv",
+      "csv_path": "/download-csv/20251226_111949",
+      "id": "20251226_111949",
+      "plot_file": "session_20251226_111949_stylish.png",
+      "plot_path": "/download-plot/20251226_111949",
+      "timestamp": "2025-12-26 11:19:49"
+    },
+    {
+      "csv_file": "session_20251226_111900.csv",
+      "csv_path": "/download-csv/20251226_111900",
+      "id": "20251226_111900",
+      "plot_file": "session_20251226_111900_stylish.png",
+      "plot_path": "/download-plot/20251226_111900",
+      "timestamp": "2025-12-26 11:19:00"
+    },
+    {
+      "csv_file": "session_20251226_110117.csv",
+      "csv_path": "/download-csv/20251226_110117",
+      "id": "20251226_110117",
+      "plot_file": "session_20251226_110117_stylish.png",
+      "plot_path": "/download-plot/20251226_110117",
+      "timestamp": "2025-12-26 11:01:17"
+    },
+    {
+      "csv_file": "session_20251226_104929.csv",
+      "csv_path": "/download-csv/20251226_104929",
+      "id": "20251226_104929",
+      "plot_file": "session_20251226_104929_stylish.png",
+      "plot_path": "/download-plot/20251226_104929",
+      "timestamp": "2025-12-26 10:49:29"
+    },
+    {
+      "csv_file": "session_20251226_104723.csv",
+      "csv_path": "/download-csv/20251226_104723",
+      "id": "20251226_104723",
+      "plot_file": "session_20251226_104723_stylish.png",
+      "plot_path": "/download-plot/20251226_104723",
+      "timestamp": "2025-12-26 10:47:23"
+    },
+    {
+      "csv_file": "session_20251226_104439.csv",
+      "csv_path": "/download-csv/20251226_104439",
+      "id": "20251226_104439",
+      "plot_file": "session_20251226_104439_stylish.png",
+      "plot_path": "/download-plot/20251226_104439",
+      "timestamp": "2025-12-26 10:44:39"
+    },
+    {
+      "csv_file": "session_20251226_103355.csv",
+      "csv_path": "/download-csv/20251226_103355",
+      "id": "20251226_103355",
+      "plot_file": "session_20251226_103355_stylish.png",
+      "plot_path": "/download-plot/20251226_103355",
+      "timestamp": "2025-12-26 10:33:55"
+    },
+    {
+      "csv_file": "session_20251226_103303.csv",
+      "csv_path": "/download-csv/20251226_103303",
+      "id": "20251226_103303",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 10:33:03"
+    },
+    {
+      "csv_file": "session_20251226_103215.csv",
+      "csv_path": "/download-csv/20251226_103215",
+      "id": "20251226_103215",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-26 10:32:15"
+    },
+    {
+      "csv_file": "session_20251223_113433.csv",
+      "csv_path": "/download-csv/20251223_113433",
+      "id": "20251223_113433",
+      "plot_file": "session_20251223_113433_stylish.png",
+      "plot_path": "/download-plot/20251223_113433",
+      "timestamp": "2025-12-23 11:34:33"
+    },
+    {
+      "csv_file": "session_20251223_112626.csv",
+      "csv_path": "/download-csv/20251223_112626",
+      "id": "20251223_112626",
+      "plot_file": "session_20251223_112626_stylish.png",
+      "plot_path": "/download-plot/20251223_112626",
+      "timestamp": "2025-12-23 11:26:26"
+    },
+    {
+      "csv_file": "session_20251223_111652.csv",
+      "csv_path": "/download-csv/20251223_111652",
+      "id": "20251223_111652",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 11:16:52"
+    },
+    {
+      "csv_file": "session_20251223_111215.csv",
+      "csv_path": "/download-csv/20251223_111215",
+      "id": "20251223_111215",
+      "plot_file": "session_20251223_111215_stylish.png",
+      "plot_path": "/download-plot/20251223_111215",
+      "timestamp": "2025-12-23 11:12:15"
+    },
+    {
+      "csv_file": "session_20251223_111105.csv",
+      "csv_path": "/download-csv/20251223_111105",
+      "id": "20251223_111105",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 11:11:05"
+    },
+    {
+      "csv_file": "session_20251223_110233.csv",
+      "csv_path": "/download-csv/20251223_110233",
+      "id": "20251223_110233",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 11:02:33"
+    },
+    {
+      "csv_file": "session_20251223_110044.csv",
+      "csv_path": "/download-csv/20251223_110044",
+      "id": "20251223_110044",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 11:00:44"
+    },
+    {
+      "csv_file": "session_20251223_105824.csv",
+      "csv_path": "/download-csv/20251223_105824",
+      "id": "20251223_105824",
+      "plot_file": "session_20251223_105824_stylish.png",
+      "plot_path": "/download-plot/20251223_105824",
+      "timestamp": "2025-12-23 10:58:24"
+    },
+    {
+      "csv_file": "session_20251223_105541.csv",
+      "csv_path": "/download-csv/20251223_105541",
+      "id": "20251223_105541",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 10:55:41"
+    },
+    {
+      "csv_file": "session_20251223_105306.csv",
+      "csv_path": "/download-csv/20251223_105306",
+      "id": "20251223_105306",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 10:53:06"
+    },
+    {
+      "csv_file": "session_20251223_104956.csv",
+      "csv_path": "/download-csv/20251223_104956",
+      "id": "20251223_104956",
+      "plot_file": "session_20251223_104956_stylish.png",
+      "plot_path": "/download-plot/20251223_104956",
+      "timestamp": "2025-12-23 10:49:56"
+    },
+    {
+      "csv_file": "session_20251223_104653.csv",
+      "csv_path": "/download-csv/20251223_104653",
+      "id": "20251223_104653",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-23 10:46:53"
+    },
+    {
+      "csv_file": "session_20251223_104638.csv",
+      "csv_path": "/download-csv/20251223_104638",
+      "id": "20251223_104638",
+      "plot_file": "session_20251223_104638_stylish.png",
+      "plot_path": "/download-plot/20251223_104638",
+      "timestamp": "2025-12-23 10:46:38"
+    },
+    {
+      "csv_file": "session_20251223_103800.csv",
+      "csv_path": "/download-csv/20251223_103800",
+      "id": "20251223_103800",
+      "plot_file": "session_20251223_103800_stylish.png",
+      "plot_path": "/download-plot/20251223_103800",
+      "timestamp": "2025-12-23 10:38:00"
+    },
+    {
+      "csv_file": "session_20251222_120335.csv",
+      "csv_path": "/download-csv/20251222_120335",
+      "id": "20251222_120335",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-22 12:03:35"
+    },
+    {
+      "csv_file": "session_20251222_120233.csv",
+      "csv_path": "/download-csv/20251222_120233",
+      "id": "20251222_120233",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-22 12:02:33"
+    },
+    {
+      "csv_file": "session_20251222_114010.csv",
+      "csv_path": "/download-csv/20251222_114010",
+      "id": "20251222_114010",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-22 11:40:10"
+    },
+    {
+      "csv_file": "session_20251222_113001.csv",
+      "csv_path": "/download-csv/20251222_113001",
+      "id": "20251222_113001",
+      "plot_file": "session_20251222_113001_stylish.png",
+      "plot_path": "/download-plot/20251222_113001",
+      "timestamp": "2025-12-22 11:30:01"
+    },
+    {
+      "csv_file": "session_20251222_112742.csv",
+      "csv_path": "/download-csv/20251222_112742",
+      "id": "20251222_112742",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-22 11:27:42"
+    },
+    {
+      "csv_file": "session_20251222_112346.csv",
+      "csv_path": "/download-csv/20251222_112346",
+      "id": "20251222_112346",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-22 11:23:46"
+    },
+    {
+      "csv_file": "session_20251222_112057.csv",
+      "csv_path": "/download-csv/20251222_112057",
+      "id": "20251222_112057",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-22 11:20:57"
+    },
+    {
+      "csv_file": "session_20251219_114954.csv",
+      "csv_path": "/download-csv/20251219_114954",
+      "id": "20251219_114954",
+      "plot_file": null,
+      "plot_path": null,
+      "timestamp": "2025-12-19 11:49:54"
+    },
+    {
+      "csv_file": "session_20251217_114528.csv",
+      "csv_path": "/download-csv/20251217_114528",
+      "id": "20251217_114528",
+      "plot_file": "session_20251217_114528_stylish.png",
+      "plot_path": "/download-plot/20251217_114528",
+      "timestamp": "2025-12-17 11:45:28"
+    }
+  ],
+  "success": true
+}

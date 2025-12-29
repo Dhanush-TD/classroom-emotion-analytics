@@ -1,62 +1,758 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Engagement Dashboard</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Education Emotion Analytics</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
+<div class="container">
+    <h1>📊 Education Emotion Analytics Dashboard</h1>
+    
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab('live')">🎬 Live Session</button>
+        <button class="tab-btn" onclick="showTab('history')">📋 Session History</button>
+    </div>
 
-<h1>📊 Teacher Engagement Dashboard</h1>
+    <!-- LIVE SESSION TAB -->
+    <div id="live-tab" class="tab-content active">
+        <div class="controls">
+            <button id="startBtn" class="btn btn-start" onclick="startSession()">▶ Start Session</button>
+            <button id="endBtn" class="btn btn-end" onclick="endSession()" disabled>⏹ End Session</button>
+            <select id="cameraSelect" title="Select a camera device" onchange="onCameraSelectChange()">
+                <option value="">Select camera...</option>
+            </select>
+            <span id="sessionStatus" class="status"></span>
+        </div>
 
-<div class="score">
-    Overall Engagement: <span>{{ engagement }}%</span>
+        <div class="video-container">
+            <video id="video" width="640" height="480" autoplay muted playsinline></video>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+            <canvas id="drawCanvas" width="640" height="480"></canvas>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-box">
+                <h2 id="engagement">📈 Engagement: 0%</h2>
+            </div>
+            <div class="metric-box">
+                <h3>👥 Detected Faces:</h3>
+                <div id="faceCount" class="face-count">0</div>
+            </div>
+        </div>
+
+        <div class="states-section">
+            <div class="metric-box">
+                <h3>📊 Current Learning States (Realtime):</h3>
+                <canvas id="stateChart" width="400" height="180"></canvas>
+            </div>
+        </div>
+
+        {% if plot_file %}
+        <div class="plot-container">
+            <h2>📉 Last Session Analytics</h2>
+            {% if plot_timestamp %}
+            <img id="plotImage" src="/plot/{{ plot_timestamp }}" alt="Last session analytics plot">
+            {% else %}
+            <p>No plot available yet.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- SESSION HISTORY TAB -->
+    <div id="history-tab" class="tab-content">
+        <div class="history-controls">
+            <button class="btn btn-primary" onclick="loadSessions()">🔄 Refresh Sessions</button>
+        </div>
+        <div id="sessionsList" class="sessions-list">
+            <p>Loading sessions...</p>
+        </div>
+    </div>
 </div>
 
-<canvas id="chart"></canvas>
-
-<script type="application/json" id="session-data">
-{
-  "labels": {{ counts.keys() | list | tojson }},
-  "values": {{ counts.values() | list | tojson }}
-}
-</script>
-
 <script>
-  const sessionData = JSON.parse(
-    document.getElementById("session-data").textContent
-  );
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const drawCanvas = document.getElementById("drawCanvas");
+let drawCtx = null;
 
-  const labels = sessionData.labels;
-  const values = sessionData.values;
-
-  const data = {
-    labels: labels,
-    datasets: [{
-      label: "Learning State Distribution",
-      data: values,
-      backgroundColor: [
-        "#2ecc71", "#3498db", "#f1c40f",
-        "#e67e22", "#e74c3c", "#9b59b6", "#95a5a6"
-      ]
-    }]
-  };
-
-  new Chart(document.getElementById("chart"), {
-    type: "bar",
-    data: data,
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } }
+// Initialize canvas context after DOM is ready
+function initCanvasContext() {
+    if (drawCanvas && !drawCtx) {
+        drawCtx = drawCanvas.getContext("2d");
+        return true;
     }
-  });
+    return drawCtx !== null;
+}
+
+// Try to initialize immediately
+initCanvasContext();
+
+// Also try on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    initCanvasContext();
+    // Initialize canvas context for frame capture
+    if (canvas) {
+        window.ctx = canvas.getContext("2d");
+    }
+});
+
+// Initialize the realtime Chart.js chart for learning states
+function initStateChart() {
+    const ctx = document.getElementById('stateChart')?.getContext('2d');
+    if (!ctx) return;
+    stateChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stateOrder,
+            datasets: [{
+                label: 'Observations',
+                data: stateOrder.map(s => realtimeStateCounts[s] || 0),
+                backgroundColor: stateOrder.map(s => stateColors[s] || '#777'),
+                borderColor: stateOrder.map(s => stateColors[s] || '#777'),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function updateStateChart() {
+    if (!stateChart) return;
+    stateChart.data.datasets[0].data = stateOrder.map(s => realtimeStateCounts[s] || 0);
+    stateChart.update('none');
+}
+const startBtn = document.getElementById("startBtn");
+const endBtn = document.getElementById("endBtn");
+const sessionStatus = document.getElementById("sessionStatus");
+const engagementDisplay = document.getElementById("engagement");
+const faceCountDisplay = document.getElementById("faceCount");
+
+let sessionActive = false;
+let frameInterval = null;
+let inFlight = false; // prevent concurrent /predict requests
+let captureCanvas = document.createElement('canvas');
+let captureCtx = captureCanvas.getContext('2d');
+let totalFrames = 0;
+let emotionCounts = {};
+
+// Realtime state counts and chart
+let realtimeStateCounts = {};
+let stateChart = null;
+const stateOrder = ["Engaged", "Interested", "Attentive", "Confused", "Frustrated", "Anxious", "Disengaged"];
+// initialize realtimeStateCounts with zeros so chart starts at 0 for each label
+stateOrder.forEach(s => { realtimeStateCounts[s] = 0; });
+// Emotion color map for face boxes
+const emotionColors = {
+    "Happy": "#2ecc71",
+    "Neutral": "#A9A9A9",
+    "Surprise": "#FF69B4",
+    "Sad": "#4169E1",
+    "Angry": "#e74c3c",
+    "Fear": "#9932CC",
+    "Disgust": "#2ca02c"
+};
+
+// Uniform box color for face rectangles
+const BOX_COLOR = "#1E90FF"; // DodgerBlue
+
+const stateColors = {
+    "Engaged": "#2ecc71",
+    "Interested": "#3498db",
+    "Attentive": "#f1c40f",
+    "Confused": "#e67e22",
+    "Frustrated": "#e74c3c",
+    "Anxious": "#9b59b6",
+    "Disengaged": "#95a5a6"
+};
+
+// Update canvas to match video display size with proper scaling
+function updateCanvasSize() {
+    if (!drawCanvas || !video) return;
+    
+    const videoRect = video.getBoundingClientRect();
+    
+    if (videoRect.width > 0 && video.videoWidth > 0) {
+        // Use devicePixelRatio to create a crisp internal canvas and map drawing to CSS pixels
+        const dpr = window.devicePixelRatio || 1;
+        const dispW = Math.max(1, Math.round(videoRect.width));
+        const dispH = Math.max(1, Math.round(videoRect.height));
+
+        drawCanvas.style.width = dispW + 'px';
+        drawCanvas.style.height = dispH + 'px';
+
+        drawCanvas.width = Math.round(dispW * dpr);
+        drawCanvas.height = Math.round(dispH * dpr);
+
+        // Scale drawing so 1 unit = 1 CSS pixel
+        if (drawCtx) {
+            drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+    }
+}
+
+// Tabs functionality
+function showTab(tabName) {
+    const tabs = document.querySelectorAll(".tab-content");
+    const btns = document.querySelectorAll(".tab-btn");
+    
+    tabs.forEach(tab => tab.classList.remove("active"));
+    btns.forEach(btn => btn.classList.remove("active"));
+    
+    document.getElementById(tabName + "-tab").classList.add("active");
+    event.target.classList.add("active");
+    
+    if (tabName === "history") {
+        loadSessions();
+    }
+}
+
+// Load sessions from backend
+function loadSessions() {
+    fetch("/sessions")
+        .then(res => res.json())
+        .then(data => {
+            console.log('🔁 /predict response:', data);
+            if (data.success && data.sessions.length > 0) {
+                displaySessions(data.sessions);
+            } else {
+                document.getElementById("sessionsList").innerHTML = "<p>No sessions found</p>";
+            }
+        })
+        .catch(err => {
+            console.error("Error loading sessions:", err);
+            document.getElementById("sessionsList").innerHTML = "<p>Error loading sessions</p>";
+        });
+}
+
+// Display sessions
+function displaySessions(sessions) {
+    let html = "<div class='sessions-grid'>";
+    
+    sessions.forEach(session => {
+        html += `
+            <div class="session-card">
+                <div class="session-header">
+                    <h3>📅 ${session.timestamp}</h3>
+                </div>
+                <div class="session-body">
+                    <p><strong>Session ID:</strong> ${session.id}</p>
+                </div>
+                <div class="session-footer">
+                    <a href="${session.csv_path}" download class="btn btn-download">📥 CSV</a>
+                    ${session.plot_file ? `<a href="/download-plot/${session.id}" class="btn btn-download">⬇️ Download Plot</a><button class="btn btn-view" onclick="togglePlot('${session.id}')">📊 View Plot</button>` : '<span class="btn btn-disabled">📊 Plot</span>'}
+                </div>
+                ${session.plot_file ? `<div id="plot_${session.id}" class="session-plot-container" style="display:none;"><img class="session-plot" src="/plot/${session.id}" alt="Plot for ${session.id}"></div>` : ''}
+            </div>
+        `;
+    });
+    
+    html += "</div>";
+    document.getElementById("sessionsList").innerHTML = html;
+}
+
+function togglePlot(sessionId) {
+    const el = document.getElementById(`plot_${sessionId}`);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+}
+
+// Access webcam with diagnostics, timeout, and retry
+function getUserMediaWithTimeout(constraints, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        const timer = setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                const err = new Error('Timeout starting video source');
+                err.name = 'TimeoutError';
+                reject(err);
+            }
+        }, timeoutMs);
+
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(stream => {
+                if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timer);
+                    resolve(stream);
+                } else {
+                    // if already timed out, stop tracks
+                    try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                }
+            })
+            .catch(err => {
+                if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timer);
+                    console.error('getUserMedia error:', err.name, err.message || err);
+                    reject(err);
+                }
+            });
+    });
+}
+
+function enumerateVideoDevices() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        console.log('Available video devices:', cams);
+        window._videoDevices = cams;
+
+        const select = document.getElementById('cameraSelect');
+        if (select) {
+            // preserve current value
+            const prev = select.value;
+            select.innerHTML = '<option value="">Select camera...</option>';
+            cams.forEach((c, i) => {
+                const opt = document.createElement('option');
+                opt.value = c.deviceId;
+                opt.text = `${i}: ${c.label || 'Camera'} (${c.deviceId.substring(0,6)})`;
+                select.appendChild(opt);
+            });
+            // restore if still present
+            if (prev) select.value = prev;
+        }
+
+        if (cams.length === 0) {
+            sessionStatus.textContent = '❌ No camera devices found';
+            sessionStatus.style.color = 'red';
+        } else {
+            // Clear verbose camera list from status to avoid cluttering the UI
+            sessionStatus.textContent = '';
+        }
+    }).catch(e => {
+        console.warn('Could not enumerate devices', e);
+    });
+}
+
+async function requestCamera(deviceId=null) {
+    // stop any previous stream and clear srcObject to release device
+    try {
+        if (video.srcObject && video.srcObject.getTracks) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+        }
+    } catch (e) { console.warn('Error stopping previous tracks', e); }
+
+    sessionStatus.textContent = '⏳ Requesting webcam...';
+    sessionStatus.style.color = 'gray';
+
+    const baseConstraints = { width: { ideal: 640 }, height: { ideal: 480 } };
+    let constraints;
+    if (deviceId) {
+        constraints = { video: Object.assign({}, baseConstraints, { deviceId: { exact: deviceId } }) };
+    } else {
+        constraints = { video: Object.assign({}, baseConstraints, { facingMode: 'user' }) };
+    }
+
+    try {
+        const stream = await getUserMediaWithTimeout(constraints, 7000);
+
+        video.srcObject = stream;
+        try { await video.play(); } catch(e){ console.warn('video.play() rejected', e); }
+
+        // allow a short time and verify frames are delivered
+        setTimeout(()=>{
+            const vw2 = video.videoWidth || 0;
+            if (!vw2) {
+                sessionStatus.textContent = '❌ Webcam has no frames (black) - try another device or close apps that may lock the camera (e.g., DroidCam)';
+                sessionStatus.style.color = 'red';
+                enumerateVideoDevices();
+            } else {
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                drawCanvas.width = video.videoWidth; drawCanvas.height = video.videoHeight;
+                updateCanvasSize();
+                initCanvasContext();
+                if (canvas) window.ctx = canvas.getContext('2d');
+                sessionStatus.textContent = `✅ Webcam ready (${video.videoWidth}x${video.videoHeight})`;
+                sessionStatus.style.color = 'green';
+            }
+        }, 600);
+
+        try { console.log('Stream tracks:', stream.getTracks().map(t=>({kind:t.kind, label:t.label, enabled:t.enabled}))); } catch(e){}
+        window.addEventListener('resize', updateCanvasSize);
+
+    } catch (err) {
+        console.error('❌ Webcam access error:', err.name, err.message || err);
+        let msg = err.name || 'Webcam error';
+        if (err.message) msg += ': ' + err.message;
+        // Tailored hint messages
+        if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+            sessionStatus.textContent = `❌ Permission denied (${msg}) — check browser camera permissions`; 
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            sessionStatus.textContent = `❌ Camera busy or not readable (${msg}) — close other apps (DroidCam, Zoom) and retry`;
+        } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+            sessionStatus.textContent = `❌ Device constraints not satisfiable (${msg}) — trying relaxed constraints...`;
+            sessionStatus.style.color = 'orange';
+            // fallback to relaxed attempt
+            try { await requestCameraRelaxed(deviceId); return; } catch(e) { console.warn('Relaxed attempt failed', e); }
+        } else if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+            sessionStatus.textContent = `❌ Timeout starting video source (${msg}) — device may be slow or locked`; 
+        } else {
+            sessionStatus.textContent = `❌ Webcam not available (${msg})`;
+        }
+        sessionStatus.style.color = 'red';
+        enumerateVideoDevices();
+    }
+}
+
+// Diagnostic: try a device with exact -> ideal -> no-deviceId strategies and return details
+async function diagnosticTryDevice(device) {
+    const results = [];
+    // strategies
+    const strategies = [
+        { name: 'exact', maker: (id)=>({ video: { deviceId: { exact: id }, width:{ ideal:640 }, height:{ ideal:480 } } }) },
+        { name: 'ideal', maker: (id)=>({ video: { deviceId: { ideal: id }, width:{ ideal:640 }, height:{ ideal:480 } } }) },
+        { name: 'none', maker: ()=>({ video: { facingMode: 'user', width:{ ideal:640 }, height:{ ideal:480 } } }) }
+    ];
+    for (let s of strategies) {
+        try {
+            const c = device && device.deviceId ? s.maker(device.deviceId) : s.maker();
+            console.log('Diagnostic trying', device.label, s.name, c);
+            const stream = await getUserMediaWithTimeout(c, 5000);
+            // success -> stop tracks and return
+            try { stream.getTracks().forEach(t=>t.stop()); } catch(e){}
+            results.push({ strategy: s.name, ok: true });
+            return { ok: true, results };
+        } catch (e) {
+            console.warn('Diagnostic failed', device.label, s.name, e.name || e.message || e);
+            results.push({ strategy: s.name, ok: false, error: (e.name || e.message || String(e)) });
+            // small delay
+            await new Promise(r=>setTimeout(r,250));
+        }
+    }
+    return { ok: false, results };
+}
+
+function onCameraSelectChange() {
+    const sel = document.getElementById('cameraSelect');
+    if (sel && sel.value) {
+        // find index for cycle tracking
+        const cams = window._videoDevices || [];
+        const idx = cams.findIndex(c => c.deviceId === sel.value);
+        window._currentDeviceIndex = idx >= 0 ? idx : 0;
+        requestCamera(sel.value);
+    }
+}
+
+function cycleCamera() {
+    const cams = window._videoDevices || [];
+    if (!cams || cams.length === 0) {
+        enumerateVideoDevices();
+        sessionStatus.textContent = '🔁 Scanning for cameras... Click Retry again';
+        return;
+    }
+    window._currentDeviceIndex = (window._currentDeviceIndex === undefined) ? 0 : (window._currentDeviceIndex + 1) % cams.length;
+    const dev = cams[window._currentDeviceIndex];
+    // update select UI
+    const sel = document.getElementById('cameraSelect');
+    if (sel) sel.value = dev.deviceId;
+    sessionStatus.textContent = `🔁 Trying camera ${window._currentDeviceIndex}: ${dev.label || 'Camera'}`;
+    requestCamera(dev.deviceId);
+}
+
+// Stop current camera and clear srcObject
+function stopCamera() {
+    try {
+        if (video.srcObject && video.srcObject.getTracks) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+        }
+        video.srcObject = null;
+        sessionStatus.textContent = '🛑 Webcam stopped';
+        sessionStatus.style.color = 'gray';
+    } catch (e) {
+        console.warn('Error stopping camera:', e);
+    }
+}
+
+// Attempt each enumerated device sequentially until one delivers frames
+async function autoTryAllCameras() {
+    const cams = window._videoDevices || [];
+    if (!cams || cams.length === 0) {
+        enumerateVideoDevices();
+        sessionStatus.textContent = '⚙️ Scanning for cameras... Click Auto-Test again';
+        return;
+    }
+    sessionStatus.textContent = '⚙️ Auto-testing cameras (detailed)...';
+    sessionStatus.style.color = 'gray';
+    stopCamera();
+    const summary = [];
+    for (let i=0;i<cams.length;i++) {
+        const dev = cams[i];
+        sessionStatus.textContent = `⚙️ Diagnosing ${i}: ${dev.label || 'Camera'}`;
+        try {
+            const diag = await diagnosticTryDevice(dev);
+            summary.push({ device: dev.label||dev.deviceId, result: diag });
+            console.log('Diagnostic for device', i, dev.label, diag);
+            if (diag.ok) {
+                // try to open for real (relaxed)
+                try {
+                    await requestCameraRelaxed(dev.deviceId);
+                    await new Promise(r=>setTimeout(r,800));
+                    if (video.videoWidth && video.videoWidth>0) {
+                        sessionStatus.textContent = `✅ Auto-test success: ${dev.label || dev.deviceId}`;
+                        sessionStatus.style.color = 'green';
+                        const sel = document.getElementById('cameraSelect'); if (sel) sel.value = dev.deviceId;
+                        window._currentDeviceIndex = i;
+                        console.log('Camera selected:', dev.deviceId);
+                        return;
+                    }
+                } catch(e) {
+                    console.warn('Failed to open after diagnostic OK', e);
+                }
+            }
+        } catch (e) {
+            console.warn('Auto-test device diagnostic error', e);
+            summary.push({ device: dev.label||dev.deviceId, error: e.name || e.message || String(e) });
+        }
+        stopCamera();
+        await new Promise(r => setTimeout(r, 300));
+    }
+    console.log('Auto-test summary:', summary);
+    sessionStatus.textContent = '❌ Auto-test failed: no camera delivered frames — see console for diagnostics';
+    sessionStatus.style.color = 'red';
+}
+
+// requestCamera but use deviceId as "ideal" to avoid strict OverconstrainedErrors
+async function requestCameraRelaxed(deviceId=null) {
+    try {
+        if (video.srcObject && video.srcObject.getTracks) video.srcObject.getTracks().forEach(t=>t.stop());
+    } catch(e){}
+    const baseConstraints = { width: { ideal: 640 }, height: { ideal: 480 } };
+    let constraints;
+    if (deviceId) {
+        constraints = { video: Object.assign({}, baseConstraints, { deviceId: { ideal: deviceId } }) };
+    } else {
+        constraints = { video: Object.assign({}, baseConstraints, { facingMode: 'user' }) };
+    }
+    const stream = await getUserMediaWithTimeout(constraints, 6000);
+    video.srcObject = stream;
+    try { await video.play(); } catch(e){ console.warn('video.play() rejected', e); }
+}
+
+// initial enumerate and try default after short delay
+enumerateVideoDevices();
+setTimeout(()=>{
+    try {
+        const cams = window._videoDevices || [];
+        if (cams.length>0) requestCameraRelaxed(cams[0].deviceId);
+        else requestCamera();
+    } catch(e){ requestCamera(); }
+}, 400);
+
+function startSession() {
+    fetch("/start-session", { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            sessionActive = true;
+            totalFrames = 0;
+            emotionCounts = {};
+            stateCounts = {};
+            startBtn.disabled = true;
+            endBtn.disabled = false;
+            sessionStatus.textContent = `✅ Session Started: ${data.session_id}`;
+            sessionStatus.style.color = "green";
+            
+                // Start capture loop (throttled by intervalMs)
+                intervalMs = 200; // milliseconds between sends
+            lastSendTime = 0;
+            if (!captureLoopRunning) {
+                captureLoopRunning = true;
+                captureLoop();
+            }
+            console.log("Session started:", data);
+        })
+        .catch(err => {
+            console.error("Error starting session:", err);
+            sessionStatus.textContent = "❌ Failed to start session";
+            sessionStatus.style.color = "red";
+        });
+}
+
+function endSession() {
+    sessionActive = false;
+    // stop capture loop
+    captureLoopRunning = false;
+    
+    fetch("/end-session", { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            startBtn.disabled = false;
+            endBtn.disabled = true;
+            sessionStatus.textContent = `✅ Session Ended - ${data.message}`;
+            sessionStatus.style.color = "blue";
+            
+            console.log("Session ended:", data);
+            
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        })
+        .catch(err => {
+            console.error("Error ending session:", err);
+            sessionStatus.textContent = "❌ Error ending session";
+            sessionStatus.style.color = "red";
+        });
+}
+
+// Capture loop using requestAnimationFrame with throttling
+let captureLoopRunning = false;
+let intervalMs = 150;
+let lastSendTime = 0;
+function captureLoop(timestamp) {
+    if (!captureLoopRunning) return;
+    const now = performance.now();
+    if (!lastSendTime || (now - lastSendTime) >= intervalMs) {
+        sendFrame();
+        lastSendTime = now;
+    }
+    requestAnimationFrame(captureLoop);
+}
+
+function sendFrame() {
+    if (!sessionActive) return;
+    if (inFlight) return; // skip if previous request still pending
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+    try {
+        // Draw a downscaled frame for transmission to reduce latency
+        const targetW = 160; // reduce transmission size for lower latency
+        const aspect = video.videoWidth && video.videoHeight ? (video.videoWidth / video.videoHeight) : (canvas.width / canvas.height);
+        const targetH = Math.round(targetW / aspect);
+        captureCanvas.width = targetW;
+        captureCanvas.height = targetH;
+        captureCtx.drawImage(video, 0, 0, targetW, targetH);
+        const image = captureCanvas.toDataURL("image/jpeg", 0.45);
+        // Sending downscaled frame (no debug log to reduce console spam)
+
+        inFlight = true;
+        fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                totalFrames++;
+                
+                // Update engagement
+                const engagementPercent = Math.round(data.engagement * 100);
+                engagementDisplay.innerHTML = `📈 Engagement: <span class="engagement-value">${engagementPercent}%</span>`;
+                
+                // Update face count
+                faceCountDisplay.textContent = data.faces ? data.faces.length : 0;
+                
+                console.log("✅ Prediction success, faces:", data.faces?.length || 0);
+                
+                // Draw face detection boxes (scale coordinates using returned frame size)
+                drawFaceBoxes(data.faces, data.frame_size);
+
+                // Track emotions (counts kept locally)
+                if (data.emotions && data.emotions.length > 0) {
+                    data.emotions.forEach(emotion => {
+                        emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+                    });
+                    // (emotions display removed)
+                }
+
+                // Update realtime learning-state counts and chart
+                // Use per-frame counts (show current frame distribution) instead of cumulative session counts
+                realtimeStateCounts = {};
+                if (data.states && data.states.length > 0) {
+                    data.states.forEach(state => {
+                        if (stateOrder.includes(state)) {
+                            realtimeStateCounts[state] = (realtimeStateCounts[state] || 0) + 1;
+                        } else {
+                            console.warn('Unknown state from server:', state);
+                        }
+                    });
+                } else {
+                    // Ensure zeros so chart clears when no faces detected
+                    stateOrder.forEach(s => { realtimeStateCounts[s] = 0; });
+                }
+                updateStateChart();
+            } else {
+                console.warn("⚠️ Prediction failed:", data.error);
+            }
+        })
+        .catch(err => console.error("❌ Prediction error:", err))
+        .finally(() => {
+            inFlight = false;
+        });
+    } catch (err) {
+        console.error("❌ Frame capture error:", err);
+    }
+}
+
+function drawFaceBoxes(faces, sourceSize) {
+    if (!drawCtx) {
+        console.error("❌ Canvas context not initialized");
+        return;
+    }
+    
+    // Clear using CSS pixel dimensions (we use setTransform to map DPR -> CSS px)
+    const dispW = drawCanvas.clientWidth || drawCanvas.width;
+    const dispH = drawCanvas.clientHeight || drawCanvas.height;
+    drawCtx.clearRect(0, 0, dispW, dispH);
+
+    if (!faces || faces.length === 0) return;
+
+    // Determine scaling from source frame size to displayed canvas size
+    let srcW = (sourceSize && sourceSize.length) ? sourceSize[0] : dispW;
+    let srcH = (sourceSize && sourceSize.length) ? sourceSize[1] : dispH;
+    const scaleX = dispW / (srcW || dispW);
+    const scaleY = dispH / (srcH || dispH);
+
+    faces.forEach((faceData) => {
+        const box = faceData.box;
+        if (!box || box.length < 4) return;
+        const [x1, y1, x2, y2] = box;
+        const sx1 = x1 * scaleX;
+        const sy1 = y1 * scaleY;
+        const sx2 = x2 * scaleX;
+        const sy2 = y2 * scaleY;
+        const width = sx2 - sx1;
+        const height = sy2 - sy1;
+
+        drawCtx.strokeStyle = BOX_COLOR;
+        drawCtx.lineWidth = 4;
+        drawCtx.strokeRect(sx1, sy1, width, height);
+    });
+}
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+// (Removed legacy emotions display functions - realtime chart handles learning states)
+
+// Load sessions on page load
+window.addEventListener("load", () => {
+    // Check if on history tab
+    const historyTab = document.getElementById("history-tab");
+    if (historyTab && historyTab.classList.contains("active")) {
+        loadSessions();
+    }
+    // Initialize chart if present
+    try { initStateChart(); } catch (e) { console.warn('State chart init failed', e); }
+});
 </script>
-
-
 </body>
 </html>

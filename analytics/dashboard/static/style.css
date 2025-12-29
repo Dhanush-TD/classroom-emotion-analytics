@@ -1,26 +1,441 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     padding: 30px;
 }
 
 h1 {
     text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    font-size: 2em;
 }
 
-.score {
-    font-size: 22px;
-    text-align: center;
-    margin: 20px;
+h2 {
+    color: #444;
+    margin-top: 20px;
+    margin-bottom: 15px;
 }
 
-.score span {
+h3 {
+    color: #555;
+    margin-bottom: 10px;
+}
+
+/* TABS */
+.tab-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #eee;
+}
+
+.tab-btn {
+    padding: 12px 25px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
     font-weight: bold;
-    color: #2ecc71;
+    color: #999;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
 }
 
-canvas {
-    background: white;
-    padding: 20px;
+.tab-btn:hover {
+    color: #667eea;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 25px;
+    align-items: center;
+}
+
+.btn {
+    padding: 12px 30px;
+    font-size: 16px;
+    border: none;
     border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.btn-start {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+}
+
+.btn-start:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+}
+
+.btn-end {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.btn-end:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.status {
+    padding: 8px 15px;
+    border-radius: 5px;
+    background: #f0f0f0;
+    color: #666;
+    font-weight: bold;
+}
+
+.video-container {
+    text-align: center;
+    margin: 25px auto;
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+}
+
+video {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: #000;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+#canvas {
+    display: none !important;
+}
+
+#drawCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    cursor: crosshair;
+    pointer-events: none;
+    z-index: 10;
+    background: transparent;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.metric-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.metric-box h2 {
+    color: white;
+    margin-top: 0;
+}
+
+.metric-box h3 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.engagement-value {
+    font-size: 1.3em;
+    font-weight: bold;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+#statesDisplay {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.state-badge {
+    display: inline-block;
+    padding: 8px 15px;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9em;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.emotion-badge {
+    display: inline-block;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin: 5px 2px;
+}
+
+.states-section, .emotions-section {
+    margin: 20px 0;
+}
+
+.states-grid, .emotions-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+}
+
+.face-count {
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+    color: white;
+}
+
+.plot-container {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #eee;
+}
+
+#plotImage, #newPlotImage {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    margin-top: 15px;
+}
+
+/* SESSION HISTORY */
+.history-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-download {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    padding: 8px 15px;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.btn-disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    padding: 8px 15px;
+    font-size: 14px;
+    display: inline-block;
+    border-radius: 6px;
+}
+
+/* Match the View Plot button to the same blue style as download links */
+.btn-view {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    padding: 8px 15px;
+    font-size: 14px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.btn-view:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.btn-view:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Style the camera select to look like other buttons and use black text for options */
+#cameraSelect {
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: black; /* show selected text in black */
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#cameraSelect option {
+    color: black; /* dropdown options text */
+}
+
+#cameraSelect:focus {
+    outline: none;
+    box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+}
+
+.sessions-list {
+    padding: 20px 0;
+}
+
+.sessions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.session-card {
+    background: white;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.session-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.session-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+}
+
+.session-header h3 {
+    margin: 0;
+    color: white;
+}
+
+.session-body {
+    padding: 15px;
+}
+
+.session-body p {
+    margin: 8px 0;
+    color: #555;
+    font-size: 14px;
+}
+
+.session-footer {
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid #eee;
+    justify-content: space-between;
+}
+
+.session-plot-container {
+    padding: 10px 15px 20px 15px;
+    border-top: 1px dashed #eee;
+    text-align: center;
+}
+
+.session-plot {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Realtime state chart sizing */
+#stateChart {
+    width: 100% !important;
+    height: 180px !important;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .controls {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .metrics {
+        grid-template-columns: 1fr;
+    }
+
+    video, canvas {
+        max-width: 100%;
+    }
+    
+    .sessions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-buttons {
+        flex-direction: column;
+    }
 }
